@@ -1,1 +1,3 @@
-__author__ = 'Kevin'
+__author__ = 'Kevin Godden'
+
+from ook import Index, Image

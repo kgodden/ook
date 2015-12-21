@@ -1,8 +1,7 @@
 __author__ = 'Kevin Godden'
 
 import argparse
-import os
-from ook import ook
+import ook
 
 
 def run():
@@ -19,9 +18,8 @@ def run():
 
     idx = ook.Index(path)
 
-    for image in idx:
-        if eval(code):
-            print('%s %s' % (image.name, image.timestamp))
+    for image in idx.filter(eval(code)).images():
+        print('%s %s' % (image.name, image.timestamp))
 
 
 if __name__ == '__main__':
