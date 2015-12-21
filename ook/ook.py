@@ -2,6 +2,11 @@ __author__ = 'Kevin Godden'
 
 import csv
 import os
+import time
+import re
+import fnmatch
+from datetime import datetime
+from decimal import Decimal
 
 class Image(object):
     def __init__(self):
@@ -28,7 +33,7 @@ class Index(object):
             while True:
                 yield next(generator)
 
-        path = (os.path.join(self.index_path, '.ook', '.flat'))
+        path = (os.path.join(self.index_path, '.ook', 'flat'))
 
         while True:
             print('opening index' + path)
@@ -54,3 +59,92 @@ class Index(object):
 
     def filter(self, predicate):
         return Index(left=self, predicate=predicate)
+
+    def scan(self):
+        print 'looking in ' + self.index_path
+
+        ook_dir = os.path.join(self.index_path, '.ook')
+
+        if not os.path.exists(ook_dir):
+            os.makedirs(ook_dir)
+
+        ii = 0
+
+        start = time.time()
+        interval_start = time.time()
+
+        # 1/115/115_Stills/115_0045_c\image_D2015-11-03T16-17-36-558784Z_0.jpg
+        # session/camera/Channel/image
+        regtxt = '(?P<session>\w+)/(?P<camera>\w+)/\w+_(?P<type>\w+)/\w+_(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<channel>\d{1}).*'
+
+        reg = re.compile(regtxt)
+
+        first = True
+        epoch = datetime.utcfromtimestamp(0)
+
+        def to_timestamp(dt):
+            delta = dt - epoch
+            return Decimal(delta.days*86400+delta.seconds)+Decimal(delta.microseconds/1000000.0).quantize(Decimal('.000001'))
+
+        attribute_maps = {
+            'timestamp': lambda v: to_timestamp(datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))
+            }
+
+        last_values = None
+
+        with open('%s/flat' % ook_dir, 'w') as out:
+            for root, dirs, filenames in os.walk(self.index_path):
+                for name in fnmatch.filter(filenames, '*.jpg'):
+                    p = os.path.relpath(root, self.index_path)
+
+                    full = os.path.join(p, name)
+                    full = '/'.join(full.split('\\'))
+
+                    m = reg.match(full)
+
+                    if not m:
+                        print 'No match - %s' % full
+                        continue
+
+                    attributes = {key: value for (key, value) in m.groupdict().iteritems()}
+                    values = [(attribute_maps[key])(value) if key in attribute_maps else value for (key, value) in
+                              attributes.iteritems()]
+
+                    if first:
+                        first = False
+
+                        out.write("h,name,path,")
+                        out.write("".join(['%s,' % val for val in attributes]))
+                        out.write('\n')
+
+                        print attributes
+
+                    ##(mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(os.path.join(root, name))
+
+                    ##t = datetime.strptime(m.group('timestamp'), '%Y-%m-%dT%H-%M-%S-%f')
+
+                    #out.write("i,%s,%s,%d," % (name, p, size))
+                    out.write("i,%s,%s," % (name, p))
+                    #out.write("".join(['%s,' % val for val in m.groups()]))
+
+                    values_copy = list(values)
+
+                    if False and last_values:
+                        for i in range(len(values)):
+                            if values[i] == last_values[i]:
+                                values[i] = '.'
+
+                    last_values = values_copy
+
+                    out.write("".join(['%s,' % val for val in values]))
+                    out.write('\n')
+
+                    ii += 1
+                    if ii % 5000 == 0:
+                        duration = time.time() - interval_start
+                        interval_start = time.time()
+                        print "Reading %d, %d images/s" % (ii, 5000 / duration)
+
+        duration = time.time() - start
+
+        print '%d images indexed in %d seconds, %d images/s' % (ii, duration, ii / duration)
