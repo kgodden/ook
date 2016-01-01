@@ -7,6 +7,60 @@ import re
 import fnmatch
 from datetime import datetime
 from decimal import Decimal
+import operator
+
+
+def to_timestamp(dt):
+    epoch = datetime.utcfromtimestamp(0)
+    delta = dt - epoch
+    return Decimal(delta.days*86400+delta.seconds)+Decimal(delta.microseconds/1000000.0).quantize(Decimal('.000001'))
+
+# idx.add_attributes(
+#   PathAttribute(
+#       '(?P<session>\w+)/(?P<camera>\w+)/\w+_(?P<type>\w+)/\w+_(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<channel>\d{1}).*',
+#       {
+#           'session': lambda m: m.groups('session'),
+#           'camera': lambda m: m.groups('camera'),
+#           'type': lambda m: m.groups('type'),
+#           'dir': lambda m: m.groups('dir'),
+#
+#             'timestamp': lambda v: to_timestamp(datetime.strptime(m.groups('timestamp'), '%Y-%m-%dT%H-%M-%S-%f'))
+#           'channel': lambda m: m.groups('channel'),
+#
+#           }
+# ))
+
+# idx.add_attributes(
+#   PathAttribute(
+#       '(?P<session>\w+)/(?P<camera>\w+)/\w+_(?P<type>\w+)/\w+_(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<channel>\d{1}).*',
+#       {
+#             'timestamp': lambda v: to_timestamp(datetime.strptime(m.groups('timestamp'), '%Y-%m-%dT%H-%M-%S-%f'))
+#
+#           }
+# ))
+
+class PathAttribute(object):
+    def __init__(self, regtxt, example, transforms={}):
+        # compile regex
+        # determine order
+        self.reg = re.compile(regtxt)
+
+        self.groups = sorted(self.reg.groupindex.items(), key=lambda o: o[1])
+        print self.groups
+
+    def names(self):
+        return [group[0] for group in self.groups]
+
+    def evaluate(self, path):
+        m = self.reg.match(path)
+
+        if not m:
+            print 'No match - %s' % full
+            return []
+
+        return [m.group(group[0]) for group in self.groups]
+
+
 
 class Image(object):
     def __init__(self):
@@ -80,11 +134,7 @@ class Index(object):
         reg = re.compile(regtxt)
 
         first = True
-        epoch = datetime.utcfromtimestamp(0)
 
-        def to_timestamp(dt):
-            delta = dt - epoch
-            return Decimal(delta.days*86400+delta.seconds)+Decimal(delta.microseconds/1000000.0).quantize(Decimal('.000001'))
 
         attribute_maps = {
             'timestamp': lambda v: to_timestamp(datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))
