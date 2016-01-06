@@ -7,46 +7,24 @@ import re
 import fnmatch
 from datetime import datetime
 from decimal import Decimal
-import operator
-
 
 def to_timestamp(dt):
+
+    #return str(calendar.timegm(dt.timetuple()))
+
     epoch = datetime.utcfromtimestamp(0)
     delta = dt - epoch
-    return Decimal(delta.days*86400+delta.seconds)+Decimal(delta.microseconds/1000000.0).quantize(Decimal('.000001'))
+    return str(Decimal(delta.days*86400+delta.seconds)+Decimal(delta.microseconds/1000000.0).quantize(Decimal('.000001')))
 
-# idx.add_attributes(
-#   PathAttribute(
-#       '(?P<session>\w+)/(?P<camera>\w+)/\w+_(?P<type>\w+)/\w+_(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<channel>\d{1}).*',
-#       {
-#           'session': lambda m: m.groups('session'),
-#           'camera': lambda m: m.groups('camera'),
-#           'type': lambda m: m.groups('type'),
-#           'dir': lambda m: m.groups('dir'),
-#
-#             'timestamp': lambda v: to_timestamp(datetime.strptime(m.groups('timestamp'), '%Y-%m-%dT%H-%M-%S-%f'))
-#           'channel': lambda m: m.groups('channel'),
-#
-#           }
-# ))
-
-# idx.add_attributes(
-#   PathAttribute(
-#       '(?P<session>\w+)/(?P<camera>\w+)/\w+_(?P<type>\w+)/\w+_(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<channel>\d{1}).*',
-#       {
-#             'timestamp': lambda v: to_timestamp(datetime.strptime(m.groups('timestamp'), '%Y-%m-%dT%H-%M-%S-%f'))
-#
-#           }
-# ))
 
 class PathAttribute(object):
-    def __init__(self, regtxt, example, transforms={}):
+    def __init__(self, regtxt, transforms=None):
         # compile regex
-        # determine order
         self.reg = re.compile(regtxt)
+        self.transforms = transforms
 
+        # determine attribute order
         self.groups = sorted(self.reg.groupindex.items(), key=lambda o: o[1])
-        print self.groups
 
     def names(self):
         return [group[0] for group in self.groups]
@@ -55,12 +33,15 @@ class PathAttribute(object):
         m = self.reg.match(path)
 
         if not m:
-            print 'No match - %s' % full
+            print 'No match - %s' % path
             return []
 
-        return [m.group(group[0]) for group in self.groups]
+        values = [self.transforms[group[0]](m.group(group[0]))
+                  if self.transforms and group[0] in self.transforms else
+                  m.group(group[0])
+                  for group in self.groups]
 
-
+        return values
 
 class Image(object):
     def __init__(self):
@@ -114,7 +95,7 @@ class Index(object):
     def filter(self, predicate):
         return Index(left=self, predicate=predicate)
 
-    def scan(self):
+    def scan(self, attributes):
         print 'looking in ' + self.index_path
 
         ook_dir = os.path.join(self.index_path, '.ook')
@@ -129,16 +110,15 @@ class Index(object):
 
         # 1/115/115_Stills/115_0045_c\image_D2015-11-03T16-17-36-558784Z_0.jpg
         # session/camera/Channel/image
-        regtxt = '(?P<session>\w+)/(?P<camera>\w+)/\w+_(?P<type>\w+)/\w+_(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<channel>\d{1}).*'
+        #regtxt = """(?P<session>\w+)/(?P<camera>\w+)/\w+_(?P<type>\w+)/\w+_(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<channel>\d{1}).*"""
 
-        reg = re.compile(regtxt)
+        #reg = re.compile(regtxt)
 
         first = True
 
-
-        attribute_maps = {
-            'timestamp': lambda v: to_timestamp(datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))
-            }
+        # attribute_maps = {
+        #     'timestamp': lambda v: to_timestamp(datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))
+        #     }
 
         last_values = None
 
@@ -150,24 +130,34 @@ class Index(object):
                     full = os.path.join(p, name)
                     full = '/'.join(full.split('\\'))
 
-                    m = reg.match(full)
+                    # m = reg.match(full)
+                    #
+                    # if not m:
+                    #     print 'No match - %s' % full
+                    #     continue
 
-                    if not m:
-                        print 'No match - %s' % full
-                        continue
+                    values = []
 
-                    attributes = {key: value for (key, value) in m.groupdict().iteritems()}
-                    values = [(attribute_maps[key])(value) if key in attribute_maps else value for (key, value) in
-                              attributes.iteritems()]
+                    for a in attributes:
+                        values.extend(a.evaluate(full))
+
+                    # attributes = {key: value for (key, value) in m.groupdict().iteritems()}
+                    # values = [(attribute_maps[key])(value) if key in attribute_maps else value for (key, value) in
+                    #           attributes.iteritems()]
 
                     if first:
                         first = False
 
+                        names = []
+
+                        for a in attributes:
+                            names.extend(a.names())
+
                         out.write("h,name,path,")
-                        out.write("".join(['%s,' % val for val in attributes]))
+                        out.write("".join(['%s,' % val for val in names]))
                         out.write('\n')
 
-                        print attributes
+                        print names
 
                     ##(mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(os.path.join(root, name))
 
