@@ -12,7 +12,9 @@ images_path = './ridge'
 class TestIndex(TestCase):
     def test_scan(self):
         idx = ook.Index(images_path)
-        idx.scan([ook.PathAttribute(regex1, {'timestamp': lambda v: ook.to_timestamp(datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))})])
+        idx.scan([ook.PathAttribute(regex1, {'timestamp': lambda v: ook.to_timestamp(datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))}),
+                  #ook.FileSizeAttribute(),
+                  ])
 
     def test_filter(self):
         idx = ook.Index(images_path)

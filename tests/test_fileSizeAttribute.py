@@ -14,4 +14,4 @@ class TestFileSizeAttribute(TestCase):
     def test_evaluate(self):
         attribute = ook.FileSizeAttribute()
         size = attribute.evaluate('ridge/sync_test/camera1/structured_light/0000/image_D2015-10-27T13-26-52-302857Z_9.jpg')
-        self.assertEquals(121278, size)
+        self.assertEquals('121278', size)

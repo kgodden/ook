@@ -54,7 +54,7 @@ class FileSizeAttribute(object):
 
     @staticmethod
     def evaluate(path):
-        return os.stat(path).st_size
+        return str(os.stat(path).st_size)
 
 class Image(object):
     def __init__(self):
