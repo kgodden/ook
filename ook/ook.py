@@ -43,6 +43,19 @@ class PathAttribute(object):
 
         return values
 
+
+class FileSizeAttribute(object):
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def names():
+        return ['file_size']
+
+    @staticmethod
+    def evaluate(path):
+        return os.stat(path).st_size
+
 class Image(object):
     def __init__(self):
         self.microseconds = None
@@ -108,17 +121,7 @@ class Index(object):
         start = time.time()
         interval_start = time.time()
 
-        # 1/115/115_Stills/115_0045_c\image_D2015-11-03T16-17-36-558784Z_0.jpg
-        # session/camera/Channel/image
-        #regtxt = """(?P<session>\w+)/(?P<camera>\w+)/\w+_(?P<type>\w+)/\w+_(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<channel>\d{1}).*"""
-
-        #reg = re.compile(regtxt)
-
         first = True
-
-        # attribute_maps = {
-        #     'timestamp': lambda v: to_timestamp(datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))
-        #     }
 
         last_values = None
 
@@ -130,20 +133,10 @@ class Index(object):
                     full = os.path.join(p, name)
                     full = '/'.join(full.split('\\'))
 
-                    # m = reg.match(full)
-                    #
-                    # if not m:
-                    #     print 'No match - %s' % full
-                    #     continue
-
                     values = []
 
                     for a in attributes:
                         values.extend(a.evaluate(full))
-
-                    # attributes = {key: value for (key, value) in m.groupdict().iteritems()}
-                    # values = [(attribute_maps[key])(value) if key in attribute_maps else value for (key, value) in
-                    #           attributes.iteritems()]
 
                     if first:
                         first = False
