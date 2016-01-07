@@ -29,12 +29,11 @@ class PathAttribute(object):
     def names(self):
         return [group[0] for group in self.groups]
 
-    def evaluate(self, path):
-        m = self.reg.match(path)
+    def evaluate(self, rel_path):
+        m = self.reg.match(rel_path)
 
         if not m:
-            print 'No match - %s' % path
-            return []
+            raise ValueError('No match - %s' % rel_path)
 
         values = [self.transforms[group[0]](m.group(group[0]))
                   if self.transforms and group[0] in self.transforms else
@@ -53,8 +52,10 @@ class FileSizeAttribute(object):
         return ['file_size']
 
     @staticmethod
-    def evaluate(path):
-        return str(os.stat(path).st_size)
+    def evaluate(rel_path):
+        print '==============='+str(os.stat(rel_path).st_size)
+        print '@@@@@@@@'+rel_path
+        return [str(os.stat(rel_path).st_size)]
 
 class Image(object):
     def __init__(self):
@@ -128,15 +129,14 @@ class Index(object):
         with open('%s/flat' % ook_dir, 'w') as out:
             for root, dirs, filenames in os.walk(self.index_path):
                 for name in fnmatch.filter(filenames, '*.jpg'):
-                    p = os.path.relpath(root, self.index_path)
-                    full = os.path.join(p, name)
-
-                    full = '/'.join(full.split('\\'))
+                    #p = os.path.relpath(root, self.index_path)
+                    rel_path = os.path.join(root, name)
+                    rel_path = '/'.join(rel_path.split('\\'))
 
                     values = []
 
                     for a in attributes:
-                        values.extend(a.evaluate(full))
+                        values.extend(a.evaluate(rel_path))
 
                     if first:
                         first = False
@@ -157,7 +157,7 @@ class Index(object):
                     ##t = datetime.strptime(m.group('timestamp'), '%Y-%m-%dT%H-%M-%S-%f')
 
                     #out.write("i,%s,%s,%d," % (name, p, size))
-                    out.write('i,%s,%s,' % (name, os.path.dirname(full)))
+                    out.write('i,%s,%s,' % (name, os.path.dirname(rel_path)))
                     #out.write("".join(['%s,' % val for val in m.groups()]))
 
                     values_copy = list(values)

@@ -5,7 +5,7 @@ import ook
 from datetime import datetime
 
 # sync_test\camera1\white_light\0000
-regex1 = '(?P<experiment>\w+)/(?P<camera>\w+)/(?P<channel>\w+)/(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<frame>\d{1}).*'
+regex1 = '(\./)?(?P<client>\w+)/(?P<experiment>\w+)/(?P<camera>\w+)/(?P<channel>\w+)/(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<frame>\d{1}).*'
 images_path = './ridge'
 
 
@@ -13,11 +13,13 @@ class TestIndex(TestCase):
     def test_scan(self):
         idx = ook.Index(images_path)
         idx.scan([ook.PathAttribute(regex1, {'timestamp': lambda v: ook.to_timestamp(datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))}),
-                  #ook.FileSizeAttribute(),
+                  ook.FileSizeAttribute(),
                   ])
 
     def test_filter(self):
         idx = ook.Index(images_path)
+        sum(1 for _ in idx.images())
+
         self.assertEquals(26, sum(1 for _ in idx.images()))
 
         idx1 = idx.filter(lambda p: True)
@@ -28,7 +30,7 @@ class TestIndex(TestCase):
 
         image = next(idx2.images())
         self.assertEquals('image_D2015-10-27T13-31-54-576940Z_9.jpg', image.name)
-        self.assertEquals('sync_test/camera1/white_light/0000', image.path)
+        self.assertEquals('./ridge/sync_test/camera1/white_light/0000', image.path)
         self.assertEquals('sync_test', image.experiment)
         self.assertEquals('camera1', image.camera)
         self.assertEquals('white_light', image.channel)
