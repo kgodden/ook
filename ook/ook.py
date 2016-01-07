@@ -129,8 +129,8 @@ class Index(object):
             for root, dirs, filenames in os.walk(self.index_path):
                 for name in fnmatch.filter(filenames, '*.jpg'):
                     p = os.path.relpath(root, self.index_path)
-
                     full = os.path.join(p, name)
+
                     full = '/'.join(full.split('\\'))
 
                     values = []
@@ -157,7 +157,7 @@ class Index(object):
                     ##t = datetime.strptime(m.group('timestamp'), '%Y-%m-%dT%H-%M-%S-%f')
 
                     #out.write("i,%s,%s,%d," % (name, p, size))
-                    out.write("i,%s,%s," % (name, p))
+                    out.write('i,%s,%s,' % (name, os.path.dirname(full)))
                     #out.write("".join(['%s,' % val for val in m.groups()]))
 
                     values_copy = list(values)
