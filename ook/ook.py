@@ -8,9 +8,10 @@ import fnmatch
 from datetime import datetime
 from decimal import Decimal
 
+
 def to_timestamp(dt):
 
-    #return str(calendar.timegm(dt.timetuple()))
+    # return str(calendar.timegm(dt.timetuple()))
 
     epoch = datetime.utcfromtimestamp(0)
     delta = dt - epoch
@@ -53,9 +54,8 @@ class FileSizeAttribute(object):
 
     @staticmethod
     def evaluate(rel_path):
-        print '==============='+str(os.stat(rel_path).st_size)
-        print '@@@@@@@@'+rel_path
         return [str(os.stat(rel_path).st_size)]
+
 
 class Image(object):
     def __init__(self):
@@ -129,7 +129,7 @@ class Index(object):
         with open('%s/flat' % ook_dir, 'w') as out:
             for root, dirs, filenames in os.walk(self.index_path):
                 for name in fnmatch.filter(filenames, '*.jpg'):
-                    #p = os.path.relpath(root, self.index_path)
+                    # p = os.path.relpath(root, self.index_path)
                     rel_path = os.path.join(root, name)
                     rel_path = '/'.join(rel_path.split('\\'))
 
@@ -152,13 +152,13 @@ class Index(object):
 
                         print names
 
-                    ##(mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(os.path.join(root, name))
+                    # #(mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(os.path.join(root, name))
 
-                    ##t = datetime.strptime(m.group('timestamp'), '%Y-%m-%dT%H-%M-%S-%f')
+                    # #t = datetime.strptime(m.group('timestamp'), '%Y-%m-%dT%H-%M-%S-%f')
 
-                    #out.write("i,%s,%s,%d," % (name, p, size))
+                    # out.write("i,%s,%s,%d," % (name, p, size))
                     out.write('i,%s,%s,' % (name, os.path.dirname(rel_path)))
-                    #out.write("".join(['%s,' % val for val in m.groups()]))
+                    # out.write("".join(['%s,' % val for val in m.groups()]))
 
                     values_copy = list(values)
 
