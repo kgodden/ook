@@ -8,6 +8,55 @@ import fnmatch
 from datetime import datetime
 from decimal import Decimal
 
+def to_timestamp(dt):
+
+    #return str(calendar.timegm(dt.timetuple()))
+
+    epoch = datetime.utcfromtimestamp(0)
+    delta = dt - epoch
+    return str(Decimal(delta.days*86400+delta.seconds)+Decimal(delta.microseconds/1000000.0).quantize(Decimal('.000001')))
+
+
+class PathAttribute(object):
+    def __init__(self, regtxt, transforms=None):
+        # compile regex
+        self.reg = re.compile(regtxt)
+        self.transforms = transforms
+
+        # determine attribute order
+        self.groups = sorted(self.reg.groupindex.items(), key=lambda o: o[1])
+
+    def names(self):
+        return [group[0] for group in self.groups]
+
+    def evaluate(self, rel_path):
+        m = self.reg.match(rel_path)
+
+        if not m:
+            raise ValueError('No match - %s' % rel_path)
+
+        values = [self.transforms[group[0]](m.group(group[0]))
+                  if self.transforms and group[0] in self.transforms else
+                  m.group(group[0])
+                  for group in self.groups]
+
+        return values
+
+
+class FileSizeAttribute(object):
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def names():
+        return ['file_size']
+
+    @staticmethod
+    def evaluate(rel_path):
+        print '==============='+str(os.stat(rel_path).st_size)
+        print '@@@@@@@@'+rel_path
+        return [str(os.stat(rel_path).st_size)]
+
 class Image(object):
     def __init__(self):
         self.microseconds = None
@@ -60,7 +109,7 @@ class Index(object):
     def filter(self, predicate):
         return Index(left=self, predicate=predicate)
 
-    def scan(self):
+    def scan(self, attributes):
         print 'looking in ' + self.index_path
 
         ook_dir = os.path.join(self.index_path, '.ook')
@@ -73,58 +122,42 @@ class Index(object):
         start = time.time()
         interval_start = time.time()
 
-        # 1/115/115_Stills/115_0045_c\image_D2015-11-03T16-17-36-558784Z_0.jpg
-        # session/camera/Channel/image
-        regtxt = '(?P<session>\w+)/(?P<camera>\w+)/\w+_(?P<type>\w+)/\w+_(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<channel>\d{1}).*'
-
-        reg = re.compile(regtxt)
-
         first = True
-        epoch = datetime.utcfromtimestamp(0)
-
-        def to_timestamp(dt):
-            delta = dt - epoch
-            return Decimal(delta.days*86400+delta.seconds)+Decimal(delta.microseconds/1000000.0).quantize(Decimal('.000001'))
-
-        attribute_maps = {
-            'timestamp': lambda v: to_timestamp(datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))
-            }
 
         last_values = None
 
         with open('%s/flat' % ook_dir, 'w') as out:
             for root, dirs, filenames in os.walk(self.index_path):
                 for name in fnmatch.filter(filenames, '*.jpg'):
-                    p = os.path.relpath(root, self.index_path)
+                    #p = os.path.relpath(root, self.index_path)
+                    rel_path = os.path.join(root, name)
+                    rel_path = '/'.join(rel_path.split('\\'))
 
-                    full = os.path.join(p, name)
-                    full = '/'.join(full.split('\\'))
+                    values = []
 
-                    m = reg.match(full)
-
-                    if not m:
-                        print 'No match - %s' % full
-                        continue
-
-                    attributes = {key: value for (key, value) in m.groupdict().iteritems()}
-                    values = [(attribute_maps[key])(value) if key in attribute_maps else value for (key, value) in
-                              attributes.iteritems()]
+                    for a in attributes:
+                        values.extend(a.evaluate(rel_path))
 
                     if first:
                         first = False
 
+                        names = []
+
+                        for a in attributes:
+                            names.extend(a.names())
+
                         out.write("h,name,path,")
-                        out.write("".join(['%s,' % val for val in attributes]))
+                        out.write("".join(['%s,' % val for val in names]))
                         out.write('\n')
 
-                        print attributes
+                        print names
 
                     ##(mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(os.path.join(root, name))
 
                     ##t = datetime.strptime(m.group('timestamp'), '%Y-%m-%dT%H-%M-%S-%f')
 
                     #out.write("i,%s,%s,%d," % (name, p, size))
-                    out.write("i,%s,%s," % (name, p))
+                    out.write('i,%s,%s,' % (name, os.path.dirname(rel_path)))
                     #out.write("".join(['%s,' % val for val in m.groups()]))
 
                     values_copy = list(values)
