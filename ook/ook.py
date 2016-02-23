@@ -8,9 +8,10 @@ import fnmatch
 from datetime import datetime
 from decimal import Decimal
 
+
 def to_timestamp(dt):
 
-    #return str(calendar.timegm(dt.timetuple()))
+    # return str(calendar.timegm(dt.timetuple()))
 
     epoch = datetime.utcfromtimestamp(0)
     delta = dt - epoch
@@ -29,7 +30,7 @@ class PathAttribute(object):
     def names(self):
         return [group[0] for group in self.groups]
 
-    def evaluate(self, rel_path):
+    def evaluate(self, rel_path, base_path):
         m = self.reg.match(rel_path)
 
         if not m:
@@ -52,10 +53,9 @@ class FileSizeAttribute(object):
         return ['file_size']
 
     @staticmethod
-    def evaluate(rel_path):
-        print '==============='+str(os.stat(rel_path).st_size)
-        print '@@@@@@@@'+rel_path
-        return [str(os.stat(rel_path).st_size)]
+    def evaluate(rel_path, base_path):
+        return [str(os.stat(os.path.join(base_path, rel_path)).st_size)]
+
 
 class Image(object):
     def __init__(self):
@@ -129,14 +129,21 @@ class Index(object):
         with open('%s/flat' % ook_dir, 'w') as out:
             for root, dirs, filenames in os.walk(self.index_path):
                 for name in fnmatch.filter(filenames, '*.jpg'):
-                    #p = os.path.relpath(root, self.index_path)
-                    rel_path = os.path.join(root, name)
+                    rel_path = os.path.relpath(root, self.index_path)
+                    print root
+                    print self.index_path
+                    print name
+
+                    rel_path = os.path.join(rel_path, name)
                     rel_path = '/'.join(rel_path.split('\\'))
 
                     values = []
 
                     for a in attributes:
-                        values.extend(a.evaluate(rel_path))
+                        try:
+                            values.extend(a.evaluate(rel_path, self.index_path))
+                        except ValueError:
+                            print "No match - " + rel_path
 
                     if first:
                         first = False
@@ -152,13 +159,13 @@ class Index(object):
 
                         print names
 
-                    ##(mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(os.path.join(root, name))
+                    # #(mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(os.path.join(root, name))
 
-                    ##t = datetime.strptime(m.group('timestamp'), '%Y-%m-%dT%H-%M-%S-%f')
+                    # #t = datetime.strptime(m.group('timestamp'), '%Y-%m-%dT%H-%M-%S-%f')
 
-                    #out.write("i,%s,%s,%d," % (name, p, size))
+                    # out.write("i,%s,%s,%d," % (name, p, size))
                     out.write('i,%s,%s,' % (name, os.path.dirname(rel_path)))
-                    #out.write("".join(['%s,' % val for val in m.groups()]))
+                    # out.write("".join(['%s,' % val for val in m.groups()]))
 
                     values_copy = list(values)
 
