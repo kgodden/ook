@@ -9,6 +9,7 @@ path1 = 'ridge/ccm20/new_dir15/new_dir15_Stills/new_dir15_0002/image_D2015-10-24
 regex2 = '(\./)?(?P<client>\w+)/(?P<experiment>\w+)/(?P<camera>\w+)/(?P<channel>\w+)/(?P<dir>\d+)/image_D(?P<timestamp>.*)Z_(?P<frame>\d{1}).*'
 path2 = 'ridge/sync_test/camera1/structured_light/0000/image_D2015-10-27T13-26-52-302857Z_9.jpg'
 
+base_path = '.'
 
 class TestPathAttribute(TestCase):
     def test___init__(self):
@@ -21,11 +22,11 @@ class TestPathAttribute(TestCase):
 
     def test_evaluate(self):
         attribute = ook.PathAttribute(regex1)
-        values = attribute.evaluate(path1)
+        values = attribute.evaluate(path1, base_path)
         self.assertEquals(values, ['ridge', 'ccm20', 'new_dir15', 'Stills', '0002', '2015-10-24T14-13-38-286378', '1'])
 
         attribute = ook.PathAttribute(regex2)
-        values = attribute.evaluate(path2)
+        values = attribute.evaluate(path2, base_path)
         self.assertEquals(values,
                           ['ridge', 'sync_test', 'camera1', 'structured_light', '0000', '2015-10-27T13-26-52-302857',
                            '9'])
@@ -36,6 +37,6 @@ class TestPathAttribute(TestCase):
                                           datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))}
                                       )
 
-        values = attribute.evaluate(path2)
+        values = attribute.evaluate(path2, base_path)
         self.assertEquals(values,
                           ['ridge', 'sync_test', 'camera1', 'structured_light', '0000', '1445952412.302857', '9'])

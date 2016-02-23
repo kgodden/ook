@@ -30,7 +30,7 @@ class PathAttribute(object):
     def names(self):
         return [group[0] for group in self.groups]
 
-    def evaluate(self, rel_path):
+    def evaluate(self, rel_path, base_path):
         m = self.reg.match(rel_path)
 
         if not m:
@@ -53,8 +53,8 @@ class FileSizeAttribute(object):
         return ['file_size']
 
     @staticmethod
-    def evaluate(rel_path):
-        return [str(os.stat(rel_path).st_size)]
+    def evaluate(rel_path, base_path):
+        return [str(os.stat(os.path.join(base_path, rel_path)).st_size)]
 
 
 class Image(object):
@@ -129,14 +129,21 @@ class Index(object):
         with open('%s/flat' % ook_dir, 'w') as out:
             for root, dirs, filenames in os.walk(self.index_path):
                 for name in fnmatch.filter(filenames, '*.jpg'):
-                    # p = os.path.relpath(root, self.index_path)
-                    rel_path = os.path.join(root, name)
+                    rel_path = os.path.relpath(root, self.index_path)
+                    print root
+                    print self.index_path
+                    print name
+
+                    rel_path = os.path.join(rel_path, name)
                     rel_path = '/'.join(rel_path.split('\\'))
 
                     values = []
 
                     for a in attributes:
-                        values.extend(a.evaluate(rel_path))
+                        try:
+                            values.extend(a.evaluate(rel_path, self.index_path))
+                        except ValueError:
+                            print "No match - " + rel_path
 
                     if first:
                         first = False
