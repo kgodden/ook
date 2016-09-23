@@ -5,10 +5,12 @@ import os
 import time
 import re
 import fnmatch
+import math
 from datetime import datetime
 from decimal import Decimal
 
-
+#del show(i):
+#    name = i.path + i.
 def to_timestamp(dt):
 
     # return str(calendar.timegm(dt.timetuple()))
@@ -55,6 +57,22 @@ class FileSizeAttribute(object):
     @staticmethod
     def evaluate(rel_path, base_path):
         return [str(os.stat(os.path.join(base_path, rel_path)).st_size)]
+
+
+class ImageAttribute(object):
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def names():
+        return ['min', 'mean', 'max']
+
+    @staticmethod
+    def evaluate(rel_path, base_path):
+        import cv2
+        img = cv2.imread(os.path.join(base_path, rel_path), 0)
+        vals = [img.min(), math.trunc(img.mean()), img.max()]
+        return [str(v) for v in vals]
 
 
 class Image(object):
@@ -130,11 +148,15 @@ class Index(object):
             for root, dirs, filenames in os.walk(self.index_path):
                 for name in fnmatch.filter(filenames, '*.jpg'):
                     rel_path = os.path.relpath(root, self.index_path)
-                    print root
-                    print self.index_path
-                    print name
+                    #print root
+                    #print self.index_path
+                    #print name
 
                     rel_path = os.path.join(rel_path, name)
+
+                    if '.paused' in rel_path:
+                        continue
+
                     rel_path = '/'.join(rel_path.split('\\'))
 
                     values = []

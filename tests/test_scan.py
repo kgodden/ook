@@ -13,6 +13,7 @@ class TestScan(TestCase):
         idx = ook.Index(images_path)
         idx.scan([ook.PathAttribute(regex1, {'timestamp': lambda v: ook.to_timestamp(datetime.strptime(v, '%Y-%m-%dT%H-%M-%S-%f'))}),
                   ook.FileSizeAttribute(),
+                  ook.ImageAttribute(),
                   ])
 
         f = idx.filter(lambda i: True)
