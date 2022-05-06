@@ -41,7 +41,7 @@ def run():
 
     i = 0
     for image in targets:
-        print('%s %s' % (image.path+'/'+image.name, image.file_size))
+        print('%s' % (image.path+'/'+image.name))
         i += 1
 
     t1 = time.time()
