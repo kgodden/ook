@@ -244,37 +244,39 @@ class Index(object):
             generator = (i for i in self.left.images() if self.predicate(i))
 
             while True:
-                yield next(generator)
+                try:
+                    yield next(generator)
+                except StopIteration:
+                    return
 
         # No predicate supplied, lets load an index from file instead
         # and implement the generator on that line-by-line
         path = (os.path.join(self.index_path, '.ook', 'flat'))
 
-        while True:
-            print('opening index' + path)
+        print('opening index' + path)
 
-            fields = []
+        fields = []
 
-            with open(path) as csvfile:
+        with open(path) as csvfile:
 
-                csv_reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-                for row in csv_reader:
-                    # Load up the attribute names from the header line
-                    if row[0] == 'h':
-                        fields = [field for field in row]
-                        continue
+            csv_reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+            for row in csv_reader:
+                # Load up the attribute names from the header line
+                if row[0] == 'h':
+                    fields = [field for field in row]
+                    continue
 
-                    image = Image()
+                image = Image()
 
-                    # Take the attributes from the CSV line and
-                    # add them to the image
-                    for i in range(1, len(row)):
-                        setattr(image, fields[i], row[i])
+                # Take the attributes from the CSV line and
+                # add them to the image
+                for i in range(1, len(row)):
+                    setattr(image, fields[i], row[i])
 
-                    yield image
+                yield image
 
-                # No more lines!
-                raise StopIteration
+            # No more lines!
+            #raise StopIteration
 
     def filter(self, predicate):
         """
@@ -312,7 +314,7 @@ class Index(object):
         :return: Nothing at the moment
         """
 
-        print 'looking in ' + self.index_path
+        print('looking in ' + self.index_path)
 
         ook_dir = os.path.join(self.index_path, '.ook')
 
@@ -355,7 +357,7 @@ class Index(object):
                         try:
                             values.extend(a.evaluate(rel_path, self.index_path))
                         except ValueError:
-                            print "No match - " + rel_path
+                            print("No match - " + rel_path)
 
                     # if this is the first row, then we write out the attributes
                     # header first, this names all of the attributes in order
@@ -371,7 +373,7 @@ class Index(object):
                         out.write("".join(['%s,' % val for val in names]))
                         out.write('\n')
 
-                        print names
+                        print(names)
 
                     # start to write the image row which starts with:
                     # i,<image-name>,<rel-path>
@@ -399,10 +401,10 @@ class Index(object):
                         duration = time.time() - interval_start
                         interval_start = time.time()
                         try:
-                            print "Reading %d, %d images/s" % (ii, every_n / duration)
+                            print("Reading %d, %d images/s" % (ii, every_n / duration))
                         except:
                             pass
 
         duration = time.time() - start
 
-        print '%d images indexed in %d seconds, %d images/s' % (ii, duration, ii / duration)
+        print('%d images indexed in %d seconds, %d images/s' % (ii, duration, ii / duration))

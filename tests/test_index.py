@@ -40,3 +40,11 @@ class TestIndex(TestCase):
 
         idx4 = idx.filter(lambda p: p.camera == 'camera1' and p.channel == 'white_light' and p.dir == '0000')
         self.assertEquals('image_D2015-10-27T13-31-54-576940Z_9.jpg', next(idx4.images()).name)
+
+        #import itertools
+
+        #itertools.accumulate(idx )
+        #print(sorted(idx.images(), key=lambda p:p.file_size)[0].frame)
+        # check it works with normal python filter
+        #im = filter(lambda p: p.camera == 'camera1' and p.channel == 'white_light' and p.dir == '0000', idx.images())
+        #self.assertEquals('image_D2015-10-27T13-31-54-576940Z_9.jpg', next(im).name)

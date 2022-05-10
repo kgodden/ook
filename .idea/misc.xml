@@ -22,7 +22,7 @@
   <component name="ProjectModuleManager">
     <modules />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 2.7 (C:\Python27\python.exe)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.8.0 (C:\Program Files\Python38\python.exe)" project-jdk-type="Python SDK" />
   <component name="PropertiesComponent">
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../../ImageQL" />
   </component>

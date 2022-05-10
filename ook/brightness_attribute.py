@@ -16,18 +16,19 @@ class BrightnessAttribute(object):
 
     @staticmethod
     def evaluate(rel_path, base_path):
+
         img = Image.open(os.path.join(base_path, rel_path))
         img = img.convert('L')
-        half = 0.5
-        imp = img.resize([int(half *   for s in img.size])
+        #half = 0.5
+        #imp = img.resize([int(half *   for s in img.size])
 
         im = np.array(img)
         flat_image = im.flatten()
         intensity = scipy.stats.gmean(flat_image, axis=0)
 
-        filter = flat_image > 40
+        im_filter = flat_image > 40
 
-        filter_image = flat_image[filter]
+        filter_image = flat_image[im_filter]
         filter_intensity = scipy.stats.gmean(filter_image, axis=0)
 
         #max_intensity = flat_image.max()
